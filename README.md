@@ -11,6 +11,7 @@ server:
 ``` javascript
 var pb = require('pylon-balancer')({namespace:'balancer'})
 pb.connect(3000) // a pylon-server
+pb.listen(80) // balancer-server
 ```
 
 client:
