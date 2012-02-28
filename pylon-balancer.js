@@ -14,7 +14,7 @@ function balancer(opts) {
   if (!(this instanceof balancer)) return new balancer(opts)
   this.routes = {byId:{},byRoute:{}}
   this.sumRequests = {}
-  this.defaultTpl = opts.defaultTpl ||
+  this.defaultTpl = opts && opts.defaultTpl ||
     [ 'html'
     , '  head'
     , '    title #{headers.host}'
