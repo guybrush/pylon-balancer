@@ -28,12 +28,12 @@ function balancer(opts) {
 balancer.prototype.connect = function() {
   var p = pylon()
   var self = this
-  function onConnect(r,s,id){
+  function onConnect(r,s){
+    debug('connected')
     r.on('set * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
       var method = split.shift()
-      var id = split.shift()
       switch(method) {
         case 'set':
           args.forEach(function(x){self.add(x)})
@@ -43,20 +43,20 @@ balancer.prototype.connect = function() {
     })
     r.once('keys',function(keys,regexp){
       r.on('get',onGet)
-      function onGet(k,v) {
-        debug('ONGET',k,v)
-      }
+      function onGet(k,v) {debug('ONGET',k,v)}
       keys.forEach(function(x){r.get(x)})
     })
     r.keys('^.* balancer$')
   }
   var args = [].slice.call(arguments)
+  debug('connecting',args)
   args.push(onConnect)
-  p.connect.apply(p,args)
+  var client = pylon.prototype.connect.apply(p,args)
+  return client
 }
 
 balancer.prototype.listen = function() {
-var args = [].slice.call(arguments)
+  var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
            ? args[args.length-1]
            : function(){}
