@@ -96,7 +96,7 @@ function startApp(x, port, route, weight, cb){
       , host   : '0.0.0.0'
       , weight : weight
       } )
-    common.p.once('set * balancer',function(){
+    common.p.once('set * * balancer',function(){
       setTimeout(cb,10) // this is kinda lame... but for now it will do...
     })
   })

@@ -30,23 +30,26 @@ balancer.prototype.connect = function() {
   var self = this
   function onConnect(r,s){
     debug('connected')
-    r.on('set * balancer',function(){
+    r.on('set * * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
       var method = split.shift()
       switch(method) {
         case 'set':
-          args.forEach(function(x){self.add(x)})
+          args.forEach(function(x){
+            self.add(x)
+          })
           break
         default: ;
       }
     })
     r.once('keys',function(keys,regexp){
+      debug('remote keys',keys,regexp)
       r.on('get',onGet)
       function onGet(k,v) {debug('ONGET',k,v)}
       keys.forEach(function(x){r.get(x)})
     })
-    r.keys('^.* balancer$')
+    r.keys('balancer$')
   }
   var args = [].slice.call(arguments)
   debug('connecting',args)
