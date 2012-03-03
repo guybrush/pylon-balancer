@@ -26,17 +26,27 @@ function balancer(opts) {
 }
 
 balancer.prototype.connect = function() {
+  debug('connecting')
   var p = pylon()
   var self = this
+  var args = [].slice.call(arguments)
+  var cb = typeof args[args.length-1] == 'function'
+           ? args.pop()
+           : function(){}
+  args.push(onConnect)
+  var client = pylon.prototype.connect.apply(p,args)
   function onConnect(r,s){
     debug('connected')
     r.on('set * * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
       var method = split.shift()
+      var ip = split.shift()
+      var id = split.shift()
       switch(method) {
         case 'set':
           args.forEach(function(x){
+            if (!x.host) x.host=ip
             self.add(x)
           })
           break
@@ -44,17 +54,19 @@ balancer.prototype.connect = function() {
       }
     })
     r.once('keys',function(keys,regexp){
-      debug('remote keys',keys,regexp)
+      debug('pre-set remote keys',keys,regexp)
+      var i = 0
       r.on('get',onGet)
-      function onGet(k,v) {debug('ONGET',k,v)}
+      function onGet(k,v) {
+        if (++i == keys.length) r.off('get')
+        if (v && !v.host) v.host = ip
+        self.add(v)
+      }
       keys.forEach(function(x){r.get(x)})
     })
-    r.keys('balancer$')
+    r.keys('^.+ .+ balancer$')
+    cb && cb(r,s)
   }
-  var args = [].slice.call(arguments)
-  debug('connecting',args)
-  args.push(onConnect)
-  var client = pylon.prototype.connect.apply(p,args)
   return client
 }
 

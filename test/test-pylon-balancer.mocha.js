@@ -16,11 +16,12 @@ module.exports =
     common.p.onAny(ee2log('P-any'))
     common.pPort    = ~~(Math.random()*50000)+10000
     common.pServer  = common.p.listen(common.pPort)
+    
     common.pb       = pb({defaultTpl:'div default-msg'})
-
     common.pbPort   = ~~(Math.random()*50000)+10000
     common.pbClient = common.pb.connect(common.pPort)
     common.pbServer = common.pb.listen(common.pbPort,done)
+    
     common.apps     = {}
   }
 , 'requesting a route which is not set yet': function(done) {
@@ -51,6 +52,32 @@ module.exports =
       })
     })
   }
+, 'balancer connecting after apps': function(done) {
+    var port = ~~(Math.random()*50000)+10000
+    var route = 'b.com'
+    var weight = 10
+    startApp('b',port,route,weight, function(){
+      var _pb = pb({defaultTpl:'div default-msg'})
+      var _pbPort   = ~~(Math.random()*50000)+10000
+      debug('connecting to pylon') 
+      var _pbClient = _pb.connect(common.pPort,function(){ 
+        debug('starting another pb-server')
+        var _pbServer = _pb.listen(_pbPort,function(){
+          setTimeout(function(){
+            sendRequest(route, _pbPort, function(res){
+              assert.equal(res.statusCode,200)
+              var data = ''                 
+              res.on('data',function(d){data+=d})
+              res.on('end',function(){
+                assert.equal(data,'this is app b')
+                done()
+              })
+            })
+          },50)
+        })
+      })
+    })    
+  }
 , 'requesting a route with multiple apps': function(done) {
     this.timeout(5000)
     var route = 'foo.bar'
@@ -80,7 +107,8 @@ module.exports =
   }
 }
 
-function startApp(x, port, route, weight, cb){
+function startApp(x, port, route, weight, cb){  
+  debug('starting app', x, port, route)
   common.apps[x] = {}
   common.apps[x].sumReq = 0
   common.apps[x].server = http.createServer(function(req,res){
@@ -88,7 +116,6 @@ function startApp(x, port, route, weight, cb){
     res.end('this is app '+x)
   }).listen(port,function(){
     common.apps[x].pylon = pylon()
-    common.apps[x].client = common.apps[x].pylon.connect(common.pPort)
     common.apps[x].pylon.set
     ( 'balancer'
     , { route  : route
@@ -96,6 +123,8 @@ function startApp(x, port, route, weight, cb){
       , host   : '0.0.0.0'
       , weight : weight
       } )
+    common.apps[x].client = common.apps[x].pylon.connect(common.pPort)
+    
     common.p.once('set * * balancer',function(){
       setTimeout(cb,10) // this is kinda lame... but for now it will do...
     })
@@ -108,18 +137,21 @@ function stopApp(x, cb) {
     common.apps[x].server.on('close',cb)
     common.apps[x].server.close()
     delete common.apps[x]
-  })
+  })                                 
   common.apps[x].client.end()
 }
 
-function sendRequest(route, cb) {
-
-  cb = cb || function() {}
+function sendRequest(route, port, cb) {
+  if (arguments.length < 3) {
+    cb = port 
+    port = common.pbPort
+  }
+  debug('sending request',route,port,arguments)
   var opts =
     { method  : 'GET'
     , host    : '0.0.0.0'
     , headers : {host:route}
-    , port    : common.pbPort
+    , port    : port
     , path    : '/' }
   var req = http.request(opts, cb)
   req.end()
