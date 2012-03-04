@@ -64,11 +64,15 @@ balancer.prototype.connect = function() {
       var i = 0
       r.on('get',onGet)
       function onGet(k,v) {
+        var split = this.event.split(' ')
+        var method = split.shift()
+        var ip = split.shift()
+        var id = split.shift()
         if (++i == keys.length) r.off('get')
         if (v && !v.host) v.host = ip
         if (v.host == '127.0.0.1') v.host = s.remoteAddress
         if (v.host == 'localhost') v.host = s.remoteAddress
-        self.add(v)
+        self.add(v,id)
       }
       keys.forEach(function(x){r.get(x)})
     })
