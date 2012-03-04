@@ -49,9 +49,9 @@ function parseArgs(){
   var server = pb.listen(optsB)
   var client = pb.connect(optsP)
   
-  startApp('a',rndPort(),'foo.eyzn.doesntexist.org',10,function(){
-    debug('started app a -> http://foo.eyzn.doesntexist.org:'+argv.p)
-  }) 
+  // startApp('a',rndPort(),'foo.eyzn.doesntexist.org',10,function(){
+  //   debug('started app a -> http://foo.eyzn.doesntexist.org:'+argv.p)
+  // }) 
 }
 
 function exit(err, msg) {
@@ -60,7 +60,7 @@ function exit(err, msg) {
   process.exit(0)
 }
 
-
+/* * /
 // setInterval(function(){pb.set('x',1)},1000)
 
 function startApp(x, port, route, weight, cb) {
@@ -94,4 +94,6 @@ function ee2log(name){return function(){
 }}
 
 function rndPort(){return ~~(Math.random()*50000)+10000}
+
+/* */
 

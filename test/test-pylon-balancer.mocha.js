@@ -52,6 +52,22 @@ module.exports =
       })
     })
   }
+, 'after stopping the app it should display the default-msg': function(done) {
+    this.timeout(5000)
+    stopApp('a', function(err){
+      debug('stopped A')
+      sendRequest('a.com', function(res){
+        debug('requested A',res.statusCode)
+        assert.equal(res.statusCode,502)
+        var data = ''
+        res.on('data',function(d){data+=d})
+        res.on('end',function(){
+          assert.equal(data,'<div>default-msg</div>')
+          done()
+        })
+      })
+    })
+  }
 , 'balancer connecting after apps': function(done) {
     var port = ~~(Math.random()*50000)+10000
     var route = 'b.com'
@@ -132,13 +148,13 @@ function startApp(x, port, route, weight, cb){
 }
 
 function stopApp(x, cb) {
-  if (!apps[x]) cb(new Error('app "'+x+'" does not exist'))
-  common.apps[x].client.on('end',function(){
-    common.apps[x].server.on('close',cb)
-    common.apps[x].server.close()
-    delete common.apps[x]
-  })                                 
-  common.apps[x].client.end()
+  debug('stopping app',x,!!common.apps[x].server)
+  if (!common.apps[x]) cb(new Error('app "'+x+'" does not exist'))
+  common.apps[x].client.on('close',cb)  
+  common.apps[x].server.on('close',function(){
+    common.apps[x].client.end()
+  })
+  common.apps[x].server.close()
 }
 
 function sendRequest(route, port, cb) {

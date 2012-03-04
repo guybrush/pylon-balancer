@@ -37,18 +37,24 @@ balancer.prototype.connect = function() {
   var client = pylon.prototype.connect.apply(p,args)
   function onConnect(r,s){
     debug('connected')
-    r.on('set * * balancer',function(){
+    r.on('* * * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
       var method = split.shift()
       var ip = split.shift()
       var id = split.shift()
+      debug('data from pylon',method,ip,id,args)
       switch(method) {
         case 'set':
           args.forEach(function(x){
-            if (!x.host) x.host=ip
-            self.add(x)
+            if (!x.host) x.host = ip
+            if (x.host == '127.0.0.1') x.host = s.remoteAddress
+            if (x.host == 'localhost') x.host = s.remoteAddress
+            self.add(x,id)
           })
+          break
+        case 'del':
+          self.del(id)
           break
         default: ;
       }
@@ -60,6 +66,8 @@ balancer.prototype.connect = function() {
       function onGet(k,v) {
         if (++i == keys.length) r.off('get')
         if (v && !v.host) v.host = ip
+        if (v.host == '127.0.0.1') v.host = s.remoteAddress
+        if (v.host == 'localhost') v.host = s.remoteAddress
         self.add(v)
       }
       keys.forEach(function(x){r.get(x)})
@@ -121,14 +129,10 @@ balancer.prototype.listen = function() {
   return server
 }
 
-balancer.prototype.add = function(routeToAdd) {
-  debug('add',routeToAdd)     
+balancer.prototype.add = function(routeToAdd,id) {
+  debug('adding',routeToAdd,id)     
   var self = this                
   if (routeToAdd.route && routeToAdd.port) {
-    var id
-    do id = Math.floor(Math.random() * Math.pow(2,32)).toString(16)
-    while (self.routes.byId[id])
-    
     routeToAdd.host = routeToAdd.host || '0.0.0.0'
     var weight = routeToAdd.weight
     if (!weight || weight < 1) weight = 1
@@ -161,6 +165,7 @@ balancer.prototype.add = function(routeToAdd) {
 }
 
 balancer.prototype.del = function(id) {
+  debug('deleting',id)
   var curr = this.routes.byId[id]
   this.routes.byRoute[curr.route] = _.without(this.routes.byRoute[curr.route],id)
   if (this.routes.byRoute[curr.route].length == 0)
