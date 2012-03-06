@@ -21,8 +21,7 @@
     "node": "0.6.x"
   },
   "devDependencies": {
-    "mocha": "0.13.x",
-    "async-array": "0.1.7"
+    "mocha": "0.13.x"
   },
   "optionalDependencies": {}
 }
