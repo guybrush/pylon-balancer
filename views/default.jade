@@ -1,0 +1,64 @@
+html
+  head
+    title #{req.headers.host}
+    style
+      #wrapper {position:fixed;top:0;bottom:0;left:0;right:0;overflow:auto;}
+      #bg {top:0;left:0;position:fixed ;width:200%; height:200%; cursor:default;}
+      #bg, #bg pre, #bg .bg {margin:0;padding:0;}
+      #bg .bg {float:left;}
+  body
+    #bg
+    #wrapper
+    script
+      var pattern =
+        [ '<div class="bg"><pre>'
+          + '/\\\\   \\\\__/\\\\/___/\\\\/___/\\\\/_'
+        , '  \\\\___\\\\          /  \\\\__/'
+        , '  / __/_        _\\\\  /  \\\\'
+        , '\\\\/_/\\\\   \\\\      /\\\\ \\\\/___/'
+        , '  /  \\\\___\\\\    /  \\\\___\\\\  '
+        , '  \\\\  / __/_  _\\\\  /   /  '
+        , '   \\\\/_/\\\\   \\\\/\\\\ \\\\/___/   '
+        , '     /  \\\\__/  \\\\___\\\\     '
+        , '__  _\\\\__/ _\\\\  /   /_  __'
+        , '  \\\\/\\\\   \\\\/\\\\ \\\\/___/  \\\\/\\\\ '
+        , '___\\\\ \\\\___\\\\ \\\\___\\\\ \\\\___\\\\ \\\\'
+        , '   / /   / / __/_/   / /'
+        , '__/\\\\/___/\\\\/_/\\\\   \\\\__/\\\\/_'
+        , '     /  \\\\__/  \\\\___\\\\     '          
+        , '    _\\\\  /  \\\\  / __/_    '
+        , '   /\\\\ \\\\/___/\\\\/_/\\\\   \\\\   '
+        , '  /  \\\\___\\\\    /  \\\\___\\\\  '
+        , ' _\\\\  /   /    \\\\  / __/_ '
+        , '/\\\\ \\\\/___/      \\\\/_/\\\\   \\\\'
+        , '  \\\\___\\\\          /  \\\\__/'
+        , '  /   /_  ____  _\\\\__/ _\\\\'
+        , '\\\\/___/  \\\\/\\\\   \\\\/\\\\   \\\\/\\\\ '
+        , '___\\\\ \\\\___\\\\ \\\\___\\\\ \\\\___\\\\ \\\\'
+        , ' __/_/   / /   / /   / /'
+          + '</pre></div>'
+        ].join('</pre><pre>')
+      
+      
+      var colors = [ ['#22252A','#689'   ,'#fff']
+                   , ['#689'   ,'#22252A','#fff']
+                   , ['#b43'   ,'#22252A','#fff']
+                   , ['#22252A','#b43'   ,'#fff']
+                   , ['#fff'   ,'#000'   ,'#b43']
+                   , ['#000'   ,'#fff'   ,'#b43']
+                   ]
+                   
+      var rnd = Math.floor(Math.random()*10)%6
+      
+      var bg = document.getElementById('bg')
+      bg.innerHTML = Array(60).join(pattern)
+      bg.style.color = colors[rnd][0]
+      bg.style.background = colors[rnd][1] 
+      
+      var boxes = document.getElementsByClassName('box')
+      boxes[0].style.color = colors[rnd][1]
+      boxes[0].style.background = colors[rnd][0]
+      
+      var links = document.getElementsByTagName('a')
+      for (var i=0, len=links.length; i<len; i++)
+        links[i].style.color = colors[rnd][2]

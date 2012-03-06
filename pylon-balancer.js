@@ -14,14 +14,9 @@ function balancer(opts) {
   if (!(this instanceof balancer)) return new balancer(opts)
   this.routes = {byId:{},byRoute:{}}
   this.sumRequests = {}
-  this.defaultTpl = opts && opts.defaultTpl ||
-    [ 'html'
-    , '  head'
-    , '    title #{headers.host}'
-    , '  body'
-    , '    h1 welcome at #{headers.host}'
-    , '    code #{JSON.stringify(locals)}'
-    ].join('\n')
+  this.defaultTpl = opts && opts.defaultTpl
+                    ? opts.defaultTpl
+                    : fs.readFileSync(__dirname+'/views/default.jade')
   return this
 }
 
@@ -201,7 +196,7 @@ balancer.prototype.handleRequest = function() {
     } else {
       debug('render default')
       res.writeHead(502)
-      res.end(renderDefault({headers:req.headers}))
+      res.end(renderDefault({req:req}))
     }
   }
 }

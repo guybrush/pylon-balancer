@@ -35,7 +35,7 @@ function parseArgs(){
   optsP.port = argv.P
   optsB.host = argv.h || '0.0.0.0'
   optsP.host = argv.H || '0.0.0.0'
-  optsP.reconnect = 500
+  optsP.reconnect = 1000
   if (argv.k && argv.c) {
     optsB.key = fs.readFileSync(argv.k)
     optsB.cert = fs.readFileSync(argv.c)
