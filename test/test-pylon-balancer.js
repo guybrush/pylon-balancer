@@ -10,21 +10,20 @@ function ee2log(name){return function(){
   debug((name || '☼')+':',this.event,'→',[].slice.call(arguments))
 }}
 
+common.p        = pylon()
+common.p.onAny(ee2log('P-any'))
+common.pPort    = ~~(Math.random()*50000)+10000
+common.pServer  = common.p.listen(common.pPort)
+
+common.pb       = pb({defaultTpl:'div default-msg'})
+common.pbPort   = ~~(Math.random()*50000)+10000
+common.pbClient = common.pb.connect(common.pPort)
+common.pbServer = common.pb.listen(common.pbPort)
+
+common.apps     = {}
+
 module.exports =
-{ before: function(done){
-    common.p        = pylon()
-    common.p.onAny(ee2log('P-any'))
-    common.pPort    = ~~(Math.random()*50000)+10000
-    common.pServer  = common.p.listen(common.pPort)
-    
-    common.pb       = pb({defaultTpl:'div default-msg'})
-    common.pbPort   = ~~(Math.random()*50000)+10000
-    common.pbClient = common.pb.connect(common.pPort)
-    common.pbServer = common.pb.listen(common.pbPort,done)
-    
-    common.apps     = {}
-  }
-, 'requesting a route which is not set yet': function(done) {
+{ 'requesting a route which is not set yet': function(done) {
     sendRequest('foo.bar', function(res){
       assert.equal(res.statusCode,502)
       res.setEncoding('utf8')
@@ -38,41 +37,48 @@ module.exports =
   }
 , 'requesting a route with one app': function(done) {
     var port = ~~(Math.random()*50000)+10000
-    var route = 'a.com'
+    var route = port+'.com'
     var weight = 10
-    startApp('a',port,route,weight, function(){
+    startApp(port,port,route,weight, function(){
       sendRequest(route, function(res){
         assert.equal(res.statusCode,200)
         var data = ''
         res.on('data',function(d){data+=d})
         res.on('end',function(){
-          assert.equal(data,'this is app a')
-          done()
+          assert.equal(data,'this is app '+port)
+          stopApp(port,done)
         })
       })
     })
   }
 , 'after stopping the app it should display the default-msg': function(done) {
     this.timeout(5000)
-    stopApp('a', function(err){
-      debug('stopped A')
-      sendRequest('a.com', function(res){
-        debug('requested A',res.statusCode)
-        assert.equal(res.statusCode,502)
-        var data = ''
-        res.on('data',function(d){data+=d})
-        res.on('end',function(){
-          assert.equal(data,'<div>default-msg</div>')
-          done()
-        })
+    var port = ~~(Math.random()*50000)+10000
+    var route = port+'.com'
+    var weight = 10
+    startApp(port,port,route,weight, function(){
+      stopApp(port, function(err){
+        debug('stopped '+port)
+        setTimeout(function(){
+          sendRequest(route, function(res){
+            debug('requested '+route,res.statusCode)
+            assert.equal(res.statusCode,502)
+            var data = ''
+            res.on('data',function(d){data+=d})
+            res.on('end',function(){
+              assert.equal(data,'<div>default-msg</div>')
+              done()
+            })
+          })
+        },50)
       })
     })
   }
 , 'balancer connecting after apps': function(done) {
     var port = ~~(Math.random()*50000)+10000
-    var route = 'b.com'
+    var route = port+'.com'
     var weight = 10
-    startApp('b',port,route,weight, function(){
+    startApp(port,port,route,weight, function(){
       var _pb = pb({defaultTpl:'div default-msg'})
       var _pbPort   = ~~(Math.random()*50000)+10000
       debug('connecting to pylon') 
@@ -81,15 +87,15 @@ module.exports =
         var _pbServer = _pb.listen(_pbPort,function(){
           setTimeout(function(){
             sendRequest(route, _pbPort, function(res){
-              assert.equal(res.statusCode,200)
+              assert.equal(200,res.statusCode)
               var data = ''                 
               res.on('data',function(d){data+=d})
               res.on('end',function(){
-                assert.equal(data,'this is app b')
-                done()
+                assert.equal(data,'this is app '+port)
+                stopApp(port,done)
               })
             })
-          },50)
+          },200)
         })
       })
     })    
@@ -148,11 +154,11 @@ function startApp(x, port, route, weight, cb){
 }
 
 function stopApp(x, cb) {
-  debug('stopping app',x,!!common.apps[x].server)
-  if (!common.apps[x]) cb(new Error('app "'+x+'" does not exist'))
-  common.apps[x].client.on('close',cb)  
+  debug('stopping app',x)
+  if (!common.apps[x]) cb(new Error('app "'+x+'" does not exist')) 
   common.apps[x].server.on('close',function(){
     common.apps[x].client.end()
+    cb()
   })
   common.apps[x].server.close()
 }

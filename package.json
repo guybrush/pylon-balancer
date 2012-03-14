@@ -14,7 +14,7 @@
     "http-proxy": "0.8.0",
     "jade": "0.20.x",
     "optimist": "0.3.1",
-    "pylon": "git+ssh://git@dev.buzzle.at:lib/pylon.git#v0.0.4",
+    "pylon": "git+ssh://git@dev.buzzle.at:lib/pylon.git#v0.0.5",
     "underscore": "1.3.1"
   },
   "engines": {

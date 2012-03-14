@@ -166,6 +166,7 @@ balancer.prototype.add = function(routeToAdd,id) {
 balancer.prototype.del = function(id) {
   debug('deleting',id)
   var curr = this.routes.byId[id]
+  if (!curr) return
   this.routes.byRoute[curr.route] = _.without(this.routes.byRoute[curr.route],id)
   if (this.routes.byRoute[curr.route].length == 0)
     delete this.routes.byRoute[curr.route]
