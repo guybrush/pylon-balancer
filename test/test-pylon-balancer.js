@@ -116,9 +116,9 @@ module.exports =
         common.apps.C.server.on('request',requestDone)
         function requestDone(){
           if (++requestsDone == 100) {
-            assert.ok(common.apps.A.sumReq<=15)
-            assert.ok(common.apps.B.sumReq<=15)
-            assert.ok(common.apps.C.sumReq>=70)
+            assert.ok(common.apps.A.sumReq<=20)
+            assert.ok(common.apps.B.sumReq<=20)
+            assert.ok(common.apps.C.sumReq>=60)
             done()
           }
         }

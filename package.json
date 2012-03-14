@@ -1,12 +1,12 @@
 {
   "name": "pylon-balancer",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "balancer for pylon",
   "bin": {
     "pylon-balancer": "./bin/cli.js"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/*.mocha.js"
+    "test": "node_modules/.bin/mocha"
   },
   "dependencies": {
     "async-array": "0.1.7",
