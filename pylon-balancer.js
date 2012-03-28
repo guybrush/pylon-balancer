@@ -32,6 +32,7 @@ balancer.prototype.connect = function() {
   var client = pylon.prototype.connect.apply(p,args)
   function onConnect(r,s){
     debug('connected')
+    var toDel = Object.keys(self.routes.byId)
     r.on('* * * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
@@ -56,20 +57,23 @@ balancer.prototype.connect = function() {
     })
     r.once('keys',function(keys,regexp){
       debug('pre-set remote keys',keys,regexp)
-      var i = 0
-      r.on('get',onGet)
-      function onGet(k,v) {
-        var split = this.event.split(' ')
-        var method = split.shift()
-        var ip = split.shift()
-        var id = split.shift()
-        if (++i == keys.length) r.off('get')
-        if (v && !v.host) v.host = ip
-        if (v.host == '127.0.0.1') v.host = s.remoteAddress
-        if (v.host == 'localhost') v.host = s.remoteAddress
-        self.add(v,id)
-      }
-      keys.forEach(function(x){r.get(x)})
+      var todo = keys.length
+      keys.forEach(function(x,i){ 
+        r.once('get', function onGet(k,v) {
+          var split = this.event.split(' ')
+          var method = split.shift()
+          var ip = split.shift()
+          var id = split.shift()
+          if (v && !v.host) v.host = ip
+          if (v.host == '127.0.0.1') v.host = s.remoteAddress
+          if (v.host == 'localhost') v.host = s.remoteAddress
+          self.add(v,id)
+          var delIndex = toDel.indexOf(id)
+          if (!!~delIndex) toDel.splice(delIndex,1)
+          if (!(--todo)) toDel.forEach(function(y){self.del(y)})
+        })
+        r.get(x)
+      }) 
     })
     r.keys('^.+ .+ balancer$')
     cb && cb(r,s)

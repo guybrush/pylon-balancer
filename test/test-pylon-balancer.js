@@ -83,7 +83,7 @@ module.exports =
       var _pbPort   = ~~(Math.random()*50000)+10000
       debug('connecting to pylon') 
       var _pbClient = _pb.connect(common.pPort,function(){ 
-        debug('starting another pb-server')
+        debug('starting the pb-server')
         var _pbServer = _pb.listen(_pbPort,function(){
           setTimeout(function(){
             sendRequest(route, _pbPort, function(res){
@@ -93,6 +93,44 @@ module.exports =
               res.on('end',function(){
                 assert.equal(data,'this is app '+port)
                 stopApp(port,done)
+              })
+            })
+          },200)
+        })
+      })
+    })    
+  }
+, 'reconnecting to pylon': function(done) {
+    var port = ~~(Math.random()*50000)+10000
+    var route = port+'.com'
+    var weight = 10
+    startApp(port,port,route,weight, function(){
+      var _pb = pb({defaultTpl:'div default-msg'})
+      var _pbPort   = ~~(Math.random()*50000)+10000
+      debug('connecting to pylon') 
+      var _pbClient = _pb.connect(common.pPort,function(){ 
+        debug('starting the pb-server')
+        var _pbServer = _pb.listen(_pbPort,function(){
+          setTimeout(function(){
+            sendRequest(route, _pbPort, function(res){
+              assert.equal(200,res.statusCode)
+              var data = ''                 
+              res.on('data',function(d){data+=d})
+              res.on('end',function(){
+                assert.equal(data,'this is app '+port)
+                common.pServer.close()
+                common.pServer = common.p.listen(common.pPort)
+                setTimeout(function(){
+                  sendRequest(route, _pbPort, function(res){
+                    assert.equal(200,res.statusCode)
+                    var data = ''                 
+                    res.on('data',function(d){data+=d})
+                    res.on('end',function(){
+                      assert.equal(data,'this is app '+port)
+                      stopApp(port,done)
+                    })
+                  })
+                },200)
               })
             })
           },200)
