@@ -100,44 +100,6 @@ module.exports =
       })
     })    
   }
-, 'reconnecting to pylon': function(done) {
-    var port = ~~(Math.random()*50000)+10000
-    var route = port+'.com'
-    var weight = 10
-    startApp(port,port,route,weight, function(){
-      var _pb = pb({defaultTpl:'div default-msg'})
-      var _pbPort   = ~~(Math.random()*50000)+10000
-      debug('connecting to pylon') 
-      var _pbClient = _pb.connect(common.pPort,function(){ 
-        debug('starting the pb-server')
-        var _pbServer = _pb.listen(_pbPort,function(){
-          setTimeout(function(){
-            sendRequest(route, _pbPort, function(res){
-              assert.equal(200,res.statusCode)
-              var data = ''                 
-              res.on('data',function(d){data+=d})
-              res.on('end',function(){
-                assert.equal(data,'this is app '+port)
-                common.pServer.close()
-                common.pServer = common.p.listen(common.pPort)
-                setTimeout(function(){
-                  sendRequest(route, _pbPort, function(res){
-                    assert.equal(200,res.statusCode)
-                    var data = ''                 
-                    res.on('data',function(d){data+=d})
-                    res.on('end',function(){
-                      assert.equal(data,'this is app '+port)
-                      stopApp(port,done)
-                    })
-                  })
-                },200)
-              })
-            })
-          },200)
-        })
-      })
-    })    
-  }
 , 'requesting a route with multiple apps': function(done) {
     this.timeout(5000)
     var route = 'foo.bar'
@@ -164,6 +126,53 @@ module.exports =
         for (var i=0;i<100;i++) sendRequest(route)
       })
       .exec()
+  }
+, 'reconnecting to pylon': function(done) {
+    this.timeout(5000)
+    
+    var _p = pylon()
+    var _pPort = ~~(Math.random()*50000)+10000
+    var _pServer = _p.listen(_pPort)
+    
+    var _pb = pylon()
+    var _pbPort = ~~(Math.random()*50000)+10000
+    var _pbClient = _pb.connect({port:_pPort})
+    var _pbServer = _pb.listen(_pbPort)
+    
+    var _appRoute = 'gnag.bar'
+    var _appPort = ~~(Math.random()*50000)+10000
+    
+    setTimeout(function(){
+      var opts =
+        { method  : 'GET'
+        , host    : '0.0.0.0'
+        , headers : {host:_appRoute}
+        , port    : _pbPort
+        , path    : '/' }
+      debug('sending request',opts)
+      var req = http.request(opts, function(res){
+        debug('did request',res.statusCode)  
+      })
+      req.end()
+    },400)    
+    
+    // var _appServer = http.createServer(function(req,res){
+    //   res.end('hello')
+    // }).listen(_appPort,function(){
+    //   debug('started app')
+    //   var _app = pylon()
+    //   _app.set( 'balancer', { route : _appRoute, port : _appPort } )
+    //   //_app.set('balancer','foo')
+    //   var _appClient = _app.connect(_pPort,{reconnect:100})
+    //   _p.once('set * * balancer',function(){
+    //     debug('set balancer',arguments)
+    //     setTimeout(function(){
+    //       sendRequest(_appRoute,_pbPort,function(req,res){
+    //         debug('sent request',res.statusCode)
+    //       })
+    //     },200)
+    //   })
+    // })
   }
 }
 
@@ -206,7 +215,7 @@ function sendRequest(route, port, cb) {
     cb = port 
     port = common.pbPort
   }
-  debug('sending request',route,port,arguments)
+  debug('sending request',route,port)
   var opts =
     { method  : 'GET'
     , host    : '0.0.0.0'
