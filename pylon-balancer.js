@@ -66,7 +66,6 @@ balancer.prototype.connect = function() {
           if (v.host == '127.0.0.1') x.host = ip
           if (v.host == 'localhost') x.host = ip
           if (!v.host) v.host = ip
-          console.log('trying to add',v,ip)
           self.add(v,id)
           var delIndex = toDel.indexOf(id)
           if (!!~delIndex) toDel.splice(delIndex,1)
