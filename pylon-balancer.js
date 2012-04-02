@@ -43,9 +43,9 @@ balancer.prototype.connect = function() {
       switch(method) {
         case 'set':
           args.forEach(function(x){
+            if (x.host == '127.0.0.1') x.host = ip
+            if (x.host == 'localhost') x.host = ip
             if (!x.host) x.host = ip
-            if (x.host == '127.0.0.1') x.host = s.remoteAddress
-            if (x.host == 'localhost') x.host = s.remoteAddress
             self.add(x,id)
           })
           break
@@ -60,13 +60,13 @@ balancer.prototype.connect = function() {
       var todo = keys.length
       keys.forEach(function(x,i){ 
         r.once('get', function onGet(k,v) {
-          var split = this.event.split(' ')
-          var method = split.shift()
+          var split = k.split(' ')
           var ip = split.shift()
           var id = split.shift()
-          if (v && !v.host) v.host = ip
-          if (v.host == '127.0.0.1') v.host = s.remoteAddress
-          if (v.host == 'localhost') v.host = s.remoteAddress
+          if (v.host == '127.0.0.1') x.host = ip
+          if (v.host == 'localhost') x.host = ip
+          if (!v.host) v.host = ip
+          console.log('trying to add',v,ip)
           self.add(v,id)
           var delIndex = toDel.indexOf(id)
           if (!!~delIndex) toDel.splice(delIndex,1)
