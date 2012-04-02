@@ -17,19 +17,20 @@ function balancer(opts) {
   this.defaultTpl = opts && opts.defaultTpl
                     ? opts.defaultTpl
                     : fs.readFileSync(__dirname+'/views/default.jade')
+  this.pylon = pylon()
   return this
 }
 
 balancer.prototype.connect = function() {
   debug('connecting')
-  var p = pylon()
+  
   var self = this
   var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
            ? args.pop()
            : function(){}
   args.push(onConnect)
-  var client = pylon.prototype.connect.apply(p,args)
+  var client = pylon.prototype.connect.apply(this.pylon,args)
   function onConnect(r,s){
     debug('connected')
     var toDel = Object.keys(self.routes.byId)
@@ -163,7 +164,8 @@ balancer.prototype.add = function(routeToAdd,id) {
     else
       this.routes.byRoute[currRoute] = currRoutes
   }
-  debug('added',currRoute,this.routes.byRoute[currRoute])
+  this.pylon.set('balancer-server',this.routes)
+  debug('added',currRoute,this.routes)
 }
 
 balancer.prototype.del = function(id) {
@@ -174,6 +176,7 @@ balancer.prototype.del = function(id) {
   if (this.routes.byRoute[curr.route].length == 0)
     delete this.routes.byRoute[curr.route]
   delete this.routes.byId[id]
+  this.pylon.set('balancer-server',this.routes)
 }
 
 balancer.prototype.handleRequest = function() {
