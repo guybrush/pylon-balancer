@@ -187,6 +187,12 @@ balancer.prototype.handleRequest = function() {
     // req.buf = httpProxy.buffer(req)
     // res.on('finish', function onFinish() {req.buf.destroy()})
     var host = req.headers.host
+    if (!host) {
+      debug('render default')
+      res.writeHead(502)
+      res.end(renderDefault({req:req}))
+      return
+    }
     if (~~host.indexOf(':')) 
       host = host.split(':')[0]
     if (self.routes.byRoute[host]) {
