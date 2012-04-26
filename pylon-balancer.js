@@ -221,6 +221,7 @@ balancer.prototype.handleUpgrade = function() {
     // req.buf = httpProxy.buffer(req)
     // socket.on('close', function onClose() {req.buf.destroy()})
     var host = req.headers.host
+    if (!host) return
     if (~~host.indexOf(':')) 
       host = host.split(':')[0]
     if (routes.byRoute[host]) {
