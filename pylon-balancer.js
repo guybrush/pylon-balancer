@@ -56,7 +56,7 @@ balancer.prototype.connect = function() {
         default: ;
       }
     })
-    r.once('keys',function(keys,regexp){
+    r.once('keys',function(regexp,keys){
       debug('pre-set remote keys',keys,regexp)
       var todo = keys.length
       keys.forEach(function(x,i){ 
