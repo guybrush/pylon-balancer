@@ -22,8 +22,6 @@ function balancer(opts) {
 }
 
 balancer.prototype.connect = function() {
-  debug('connecting')
-  
   var self = this
   var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
@@ -32,7 +30,7 @@ balancer.prototype.connect = function() {
   args.push(onConnect)
   var client = pylon.prototype.connect.apply(this.pylon,args)
   function onConnect(r,s){
-    debug('connected')
+    debug('connected to pylon')
     var toDel = Object.keys(self.routes.byId)
     r.on('* * * balancer',function(){
       var args = [].slice.call(arguments)
@@ -76,6 +74,7 @@ balancer.prototype.connect = function() {
       }) 
     })
     r.keys('^.+ .+ balancer$')
+    s.on('error',function(err){debug('socket error',err)})
     cb && cb(r,s)
   }
   return client
@@ -127,13 +126,13 @@ balancer.prototype.listen = function() {
   
   server.on('request', this.handleRequest())
   server.on('upgrade', this.handleUpgrade())
-  
+  server.on('error', function(err){debug('server error',err)})
   server.listen(opts.port,opts.host,cb)
   return server
 }
 
 balancer.prototype.add = function(routeToAdd,id) {
-  debug('adding',routeToAdd,id)     
+  debug('adding route',{id:id,route:routeToAdd})     
   var self = this                
   if (routeToAdd.route && routeToAdd.port) {
     routeToAdd.host = routeToAdd.host || '0.0.0.0'
@@ -165,7 +164,7 @@ balancer.prototype.add = function(routeToAdd,id) {
       this.routes.byRoute[currRoute] = currRoutes
   }
   this.pylon.set('balancer-server',this.routes)
-  debug('added',currRoute,this.routes)
+  debug('added route',{newRoute:currRoute,allRoutes:this.routes})
 }
 
 balancer.prototype.del = function(id) {
@@ -204,7 +203,7 @@ balancer.prototype.handleRequest = function() {
                       , host : self.routes.byId[id].host 
                       // , buffer : req.buf
                       }
-      debug('proxyRequest',host,currProxy)
+      debug('proxyRequest',{host:host,proxy:currProxy})
       proxy.proxyRequest(req, res, currProxy)
     } else {
       debug('render default')
