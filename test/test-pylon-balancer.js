@@ -10,17 +10,17 @@ function ee2log(name){return function(){
   debug((name || '☼')+':',this.event,'→',[].slice.call(arguments))
 }}
 
-common.p        = pylon()
+common.p = pylon()
 common.p.onAny(ee2log('P-any'))
-common.pPort    = ~~(Math.random()*50000)+10000
-common.pServer  = common.p.listen(common.pPort)
+common.pPort = ~~(Math.random()*50000)+10000
+common.pServer = common.p.listen(common.pPort)
 
-common.pb       = pb({defaultTpl:'div default-msg'})
-common.pbPort   = ~~(Math.random()*50000)+10000
+common.pb = pb({defaultTpl:'div default-msg'})
+common.pbPort = ~~(Math.random()*50000)+10000
 common.pbClient = common.pb.connect(common.pPort)
 common.pbServer = common.pb.listen(common.pbPort)
 
-common.apps     = {}
+common.apps = {}
 
 module.exports =
 { 'requesting a route which is not set yet': function(done) {
@@ -39,7 +39,7 @@ module.exports =
     var port = ~~(Math.random()*50000)+10000
     var route = port+'.com'
     var weight = 10
-    startApp(port,port,route,weight, function(){
+    startApp(port,port,[route],weight, function(){
       sendRequest(route, function(res){
         assert.equal(res.statusCode,200)
         var data = ''
@@ -54,23 +54,27 @@ module.exports =
 , 'after stopping the app it should display the default-msg': function(done) {
     this.timeout(5000)
     var port = ~~(Math.random()*50000)+10000
-    var route = port+'.com'
+    var routeA = port+'A.com'
+    var routeB = port+'B.com'
     var weight = 10
-    startApp(port,port,route,weight, function(){
-      stopApp(port, function(err){
-        debug('stopped '+port)
-        setTimeout(function(){
-          sendRequest(route, function(res){
-            debug('requested '+route,res.statusCode)
-            assert.equal(res.statusCode,502)
-            var data = ''
-            res.on('data',function(d){data+=d})
-            res.on('end',function(){
-              assert.equal(data,'<div>default-msg</div>')
-              done()
+    startApp(port,port,[routeA,routeB],weight, function(){
+      sendRequest(routeA, function(res){
+        assert.equal(res.statusCode,200)
+        stopApp(port, function(err){
+          debug('stopped '+port)
+          setTimeout(function(){
+            sendRequest(routeB, function(res){
+              debug('requested '+routeB,res.statusCode)
+              assert.equal(res.statusCode,502)
+              var data = ''
+              res.on('data',function(d){data+=d})
+              res.on('end',function(){
+                assert.equal(data,'<div>default-msg</div>')
+                done()
+              })
             })
-          })
-        },50)
+          },50)
+        })
       })
     })
   }
@@ -78,7 +82,7 @@ module.exports =
     var port = ~~(Math.random()*50000)+10000
     var route = port+'.com'
     var weight = 10
-    startApp(port,port,route,weight, function(){
+    startApp(port,port,[route],weight, function(){
       var _pb = pb({defaultTpl:'div default-msg'})
       var _pbPort   = ~~(Math.random()*50000)+10000
       debug('connecting to pylon') 
@@ -100,13 +104,65 @@ module.exports =
       })
     })    
   }
+, 'starting: app, then balancer, then pylon': function(done) {
+    var p = pylon()
+    var pPort = ~~(Math.random()*50000)+10000
+    var b = pb({defaultTpl:'div default-msg'})
+    var bPort = ~~(Math.random()*50000)+10000
+    
+    // start app
+    var port = ~~(Math.random()*50000)+10000
+    var route = port+'.com'
+    var weight = 10
+    var app = http.createServer(function(req,res){
+      res.end('hello')
+    }).listen(port,function(){
+      debug('app has started')
+      var appPylon = pylon()
+      appPylon.set( 'balancer'
+                  , { routes : [route]
+                    , port   : port
+                    , host   : '0.0.0.0'
+                    , weight : weight
+                    } )
+      appPylon.connect(pPort,{reconnect:10},function(){
+        debug('app connected to pylon')
+      })
+      
+      // start balancer
+      var bClient = b.connect({port:pPort,reconnect:20},function(){
+        debug('balancer connected to pylon')
+      })
+      var bServer = b.listen(bPort,function(){
+        debug('balancer started')
+        
+        // start pylon
+        p.listen(pPort)
+      })
+    })
+    
+    p.once('set * * balancer',function(){
+      setTimeout(function(){
+        sendRequest(route, bPort, function(res){
+          assert.equal(200,res.statusCode)
+          var data = ''                 
+          res.on('data',function(d){data+=d})
+          res.on('end',function(){
+            assert.equal(data,'hello')
+            app.close()
+            done()
+          })
+        })
+      },200)
+    })
+  }
 , 'requesting a route with multiple apps': function(done) {
     this.timeout(5000)
     var route = 'foo.bar'
     new AA([['A',2],['B',2],['C',6]])
       .map(function(x,i,next){
         var port = ~~(Math.random()*50000)+10000
-        startApp(x[0],port,route,x[1],next)
+        startApp(x[0],port,[route],x[1],next)
       })
       .done(function(err,data){
         if (err) return done(err)
@@ -129,8 +185,8 @@ module.exports =
   }
 }
 
-function startApp(x, port, route, weight, cb){  
-  debug('starting app', x, port, route)
+function startApp(x, port, routes, weight, cb){  
+  debug('starting app', x, port, routes)
   common.apps[x] = {}
   common.apps[x].sumReq = 0
   common.apps[x].server = http.createServer(function(req,res){
@@ -140,7 +196,7 @@ function startApp(x, port, route, weight, cb){
     common.apps[x].pylon = pylon()
     common.apps[x].pylon.set
     ( 'balancer'
-    , { route  : route
+    , { routes : routes
       , port   : port
       , host   : '0.0.0.0'
       , weight : weight

@@ -25,8 +25,8 @@ balancer.prototype.connect = function() {
   var self = this
   var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
-           ? args.pop() // args[args.length-1]
-           : null
+           ? args.pop()
+           : function(){}
   args.push(onConnectPb)
   var client = pylon.prototype.connect.apply(this.pylon,args)
   function onConnectPb(r,s){
@@ -131,51 +131,57 @@ balancer.prototype.listen = function() {
   return server
 }
 
-balancer.prototype.add = function(routeToAdd,id) {
-  debug('adding route',{id:id,route:routeToAdd})     
+balancer.prototype.add = function(routesToAdd,id) {
+  debug('adding routes')     
   var self = this                
-  if (routeToAdd.route && routeToAdd.port) {
-    routeToAdd.host = routeToAdd.host || '0.0.0.0'
-    var weight = routeToAdd.weight
+  if ( routesToAdd.routes 
+       && Array.isArray(routesToAdd.routes) 
+       && routesToAdd.port) {
+    routesToAdd.host = routesToAdd.host || '0.0.0.0'
+    var weight = routesToAdd.weight
     if (!weight || weight < 1) weight = 1
     if (weight > 10) weight = 10
-    var currRoute = routeToAdd.route
   
-    this.routes.byId[id] = 
-      { host   : routeToAdd.host
-      , port   : routeToAdd.port
-      , route  : currRoute
+    self.routes.byId[id] = 
+      { host   : routesToAdd.host
+      , port   : routesToAdd.port
+      , routes : routesToAdd.routes
       , weight : weight
       , id     : id }    
-    var currRoutes = this.routes.byRoute[currRoute]
-                     ? _.uniq(this.routes.byRoute[currRoute].concat(id))
-                     : [id]
-    if (currRoutes.length > 2) {
-      var newRoutes = []
-      for (var i=0;i<10;i++) {
-        currRoutes.map(function(x){
-          if (i%~~(10/self.routes.byId[x].weight)==0)
-            newRoutes.push(x)
-        })
+    routesToAdd.routes.forEach(function(x){
+      var currRoutes = self.routes.byRoute[x]
+                       ? _.uniq(self.routes.byRoute[x].concat(id))
+                       : [id]
+      if (currRoutes.length > 2) {
+        var newRoutes = []
+        for (var i=0;i<10;i++) {
+          currRoutes.map(function(y){
+            if (i%~~(10/self.routes.byId[y].weight)==0)
+              newRoutes.push(y)
+          })
+        }
+        self.routes.byRoute[x] = newRoutes
       }
-      this.routes.byRoute[currRoute] = newRoutes
-    }
-    else
-      this.routes.byRoute[currRoute] = currRoutes
+      else
+        self.routes.byRoute[x] = currRoutes
+    })
   }
-  this.pylon.set('balancer-server',this.routes)
-  debug('added route',{newRoute:currRoute})
+  self.pylon.set('balancer-server',self.routes)
+  debug('added routes',{id:id,routes:routesToAdd})
 }
 
 balancer.prototype.del = function(id) {
   debug('deleting',id)
-  var curr = this.routes.byId[id]
+  var self = this
+  var curr = self.routes.byId[id]
   if (!curr) return
-  this.routes.byRoute[curr.route] = _.without(this.routes.byRoute[curr.route],id)
-  if (this.routes.byRoute[curr.route].length == 0)
-    delete this.routes.byRoute[curr.route]
-  delete this.routes.byId[id]
-  this.pylon.set('balancer-server',this.routes)
+  curr.routes.forEach(function(x){
+    self.routes.byRoute[x] = _.without(self.routes.byRoute[x],id)
+    if (self.routes.byRoute[x].length == 0)
+      delete self.routes.byRoute[x]
+  })
+  delete self.routes.byId[id]
+  self.pylon.set('balancer-server',self.routes)
 }
 
 balancer.prototype.handleRequest = function() {
