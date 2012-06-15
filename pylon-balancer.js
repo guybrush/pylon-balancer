@@ -25,11 +25,11 @@ balancer.prototype.connect = function() {
   var self = this
   var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
-           ? args.pop()
-           : function(){}
-  args.push(onConnect)
+           ? args[args.length-1]
+           : null
+  args.push(onConnectPb)
   var client = pylon.prototype.connect.apply(this.pylon,args)
-  function onConnect(r,s){
+  function onConnectPb(r,s){
     debug('connected to pylon')
     var toDel = Object.keys(self.routes.byId)
     r.on('* * * balancer',function(){
@@ -55,7 +55,7 @@ balancer.prototype.connect = function() {
       }
     })
     r.once('keys',function(regexp,keys){
-      debug('pre-set remote keys',keys,regexp)
+      debug('pre-set remote keys',keys)
       var todo = keys.length
       keys.forEach(function(x,i){ 
         r.once('get', function onGet(k,v) {
@@ -74,7 +74,7 @@ balancer.prototype.connect = function() {
       }) 
     })
     r.keys('^.+ .+ balancer$')
-    s.on('error',function(err){debug('socket error',err)})
+    //s.on('error',function(err){debug('socket error',err)})
     cb && cb(r,s)
   }
   return client
@@ -164,7 +164,7 @@ balancer.prototype.add = function(routeToAdd,id) {
       this.routes.byRoute[currRoute] = currRoutes
   }
   this.pylon.set('balancer-server',this.routes)
-  debug('added route',{newRoute:currRoute,allRoutes:this.routes})
+  debug('added route',{newRoute:currRoute})
 }
 
 balancer.prototype.del = function(id) {
