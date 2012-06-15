@@ -25,7 +25,7 @@ balancer.prototype.connect = function() {
   var self = this
   var args = [].slice.call(arguments)
   var cb = typeof args[args.length-1] == 'function'
-           ? args[args.length-1]
+           ? args.pop() // args[args.length-1]
            : null
   args.push(onConnectPb)
   var client = pylon.prototype.connect.apply(this.pylon,args)
