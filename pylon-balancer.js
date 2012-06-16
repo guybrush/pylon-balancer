@@ -9,6 +9,7 @@ var pylon = require('pylon')
   , jade = require('jade')
   , debug = require('debug')('pylon-balancer')
   , _ = require('underscore')
+  , seed = ~~(Math.random() * 1e9)
 
 function balancer(opts) {
   if (!(this instanceof balancer)) return new balancer(opts)
@@ -57,7 +58,7 @@ balancer.prototype.connect = function() {
     r.once('keys',function(regexp,keys){
       debug('pre-set remote keys',keys)
       var todo = keys.length
-      keys.forEach(function(x,i){ 
+      keys.forEach(function(x,i){
         r.once('get', function onGet(k,v) {
           var split = k.split(' ')
           var ip = split.shift()
@@ -71,7 +72,7 @@ balancer.prototype.connect = function() {
           if (!(--todo)) toDel.forEach(function(y){self.del(y)})
         })
         r.get(x)
-      }) 
+      })
     })
     r.keys('^.+ .+ balancer$')
     //s.on('error',function(err){debug('socket error',err)})
@@ -114,7 +115,7 @@ balancer.prototype.listen = function() {
 
   opts.host = opts.host || '0.0.0.0'
   if (!opts.port) throw new Error('no port defined')
-    
+
   var self = this
   var server
   if (opts.tls.key && opts.tls.cert){
@@ -123,7 +124,7 @@ balancer.prototype.listen = function() {
   }
   else
     server = http.createServer()
-  
+
   server.on('request', this.handleRequest())
   server.on('upgrade', this.handleUpgrade())
   server.on('error', function(err){debug('server error',err)})
@@ -132,38 +133,23 @@ balancer.prototype.listen = function() {
 }
 
 balancer.prototype.add = function(routesToAdd,id) {
-  debug('adding routes')     
-  var self = this                
-  if ( routesToAdd.routes 
-       && Array.isArray(routesToAdd.routes) 
+  debug('adding routes')
+  var self = this
+  if ( routesToAdd.routes
+       && Array.isArray(routesToAdd.routes)
        && routesToAdd.port) {
     routesToAdd.host = routesToAdd.host || '0.0.0.0'
-    var weight = routesToAdd.weight
-    if (!weight || weight < 1) weight = 1
-    if (weight > 10) weight = 10
-  
-    self.routes.byId[id] = 
+
+    self.routes.byId[id] =
       { host   : routesToAdd.host
       , port   : routesToAdd.port
       , routes : routesToAdd.routes
-      , weight : weight
-      , id     : id }    
+      , id     : id }
+
     routesToAdd.routes.forEach(function(x){
-      var currRoutes = self.routes.byRoute[x]
-                       ? _.uniq(self.routes.byRoute[x].concat(id))
-                       : [id]
-      if (currRoutes.length > 2) {
-        var newRoutes = []
-        for (var i=0;i<10;i++) {
-          currRoutes.map(function(y){
-            if (i%~~(10/self.routes.byId[y].weight)==0)
-              newRoutes.push(y)
-          })
-        }
-        self.routes.byRoute[x] = newRoutes
-      }
-      else
-        self.routes.byRoute[x] = currRoutes
+      self.routes.byRoute[x] = self.routes.byRoute[x]
+                               ? _.uniq(self.routes.byRoute[x].concat(id))
+                               : [id]
     })
   }
   self.pylon.set('balancer-server',self.routes)
@@ -198,15 +184,16 @@ balancer.prototype.handleRequest = function() {
       res.end(renderDefault({req:req}))
       return
     }
-    if (~~host.indexOf(':')) 
+    if (~~host.indexOf(':'))
       host = host.split(':')[0]
     if (self.routes.byRoute[host]) {
       self.sumRequests[host] = self.sumRequests[host] || 0
-      var len = self.routes.byRoute[host].length
-      var id = self.routes.byRoute[host][self.sumRequests[host]%len]
       self.sumRequests[host]++
+      var len = self.routes.byRoute[host].length
+      var ipHash = hash((req.remoteAddress || '').split(/\./g), seed)
+      var id = self.routes.byRoute[host][ipHash%len]
       var currProxy = { port : self.routes.byId[id].port
-                      , host : self.routes.byId[id].host 
+                      , host : self.routes.byId[id].host
                       // , buffer : req.buf
                       }
       debug('proxyRequest',{host:host,proxy:currProxy})
@@ -228,20 +215,40 @@ balancer.prototype.handleUpgrade = function() {
     // socket.on('close', function onClose() {req.buf.destroy()})
     var host = req.headers.host
     if (!host) return
-    if (~~host.indexOf(':')) 
+    if (~~host.indexOf(':'))
       host = host.split(':')[0]
     if (routes.byRoute[host]) {
       sumRequests[host] = sumRequests[host] || 0
-      var len = routes.byRoute[host].length
-      var id = routes.byRoute[host][sumRequests[host]%len]
       sumRequests[host]++
-      var id = routes.byRoute[host][0]
+      var len = self.routes.byRoute[host].length
+      var ipHash = hash((req.remoteAddress || '').split(/\./g), seed)
+      var id = self.routes.byRoute[host][ipHash%len]
       var currProxy = { port : routes.byId[id].port
-                      , host : routes.byId[id].host 
+                      , host : routes.byId[id].host
                       // , buffer : req.buf
                       }
       proxy.proxyWebSocketRequest(req, socket, req.head, currProxy)
     }
   }
+}
+
+// https://github.com/indutny/sticky-session/blob/f834a141/lib/sticky-session.js
+function hash(ip, seed) {
+  var hash = ip.reduce(function(r, num) {
+    r += parseInt(num, 10);
+    r %= 2147483648;
+    r += (r << 10)
+    r %= 2147483648;
+    r ^= r >> 6;
+    return r;
+  }, seed);
+
+  hash += hash << 3;
+  hash %= 2147483648;
+  hash ^= hash >> 11;
+  hash += hash << 15;
+  hash %= 2147483648;
+
+  return hash >>> 0;
 }
 

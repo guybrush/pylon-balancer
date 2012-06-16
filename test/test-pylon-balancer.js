@@ -38,8 +38,7 @@ module.exports =
 , 'requesting a route with one app': function(done) {
     var port = ~~(Math.random()*50000)+10000
     var route = port+'.com'
-    var weight = 10
-    startApp(port,port,[route],weight, function(){
+    startApp(port, port, [route], function(){
       sendRequest(route, function(res){
         assert.equal(res.statusCode,200)
         var data = ''
@@ -56,8 +55,7 @@ module.exports =
     var port = ~~(Math.random()*50000)+10000
     var routeA = port+'A.com'
     var routeB = port+'B.com'
-    var weight = 10
-    startApp(port,port,[routeA,routeB],weight, function(){
+    startApp(port,port,[routeA,routeB], function(){
       sendRequest(routeA, function(res){
         assert.equal(res.statusCode,200)
         stopApp(port, function(err){
@@ -81,8 +79,7 @@ module.exports =
 , 'balancer connecting after apps': function(done) {
     var port = ~~(Math.random()*50000)+10000
     var route = port+'.com'
-    var weight = 10
-    startApp(port,port,[route],weight, function(){
+    startApp(port,port,[route], function(){
       var _pb = pb({defaultTpl:'div default-msg'})
       var _pbPort   = ~~(Math.random()*50000)+10000
       debug('connecting to pylon') 
@@ -156,41 +153,12 @@ module.exports =
       },200)
     })
   }
-, 'requesting a route with multiple apps': function(done) {
-    this.timeout(5000)
-    var route = 'foo.bar'
-    new AA([['A',2],['B',2],['C',6]])
-      .map(function(x,i,next){
-        var port = ~~(Math.random()*50000)+10000
-        startApp(x[0],port,[route],x[1],next)
-      })
-      .done(function(err,data){
-        if (err) return done(err)
-        var requestsDone = 0
-        common.apps.A.server.on('request',requestDone)
-        common.apps.B.server.on('request',requestDone)
-        common.apps.C.server.on('request',requestDone)
-        function requestDone(){
-          if (++requestsDone == 100) {
-            assert.ok(common.apps.A.sumReq<=20)
-            assert.ok(common.apps.B.sumReq<=20)
-            assert.ok(common.apps.C.sumReq>=60)
-            done()
-          }
-        }
-        var requestsTodo = []
-        for (var i=0;i<100;i++) sendRequest(route)
-      })
-      .exec()
-  }
 }
 
-function startApp(x, port, routes, weight, cb){  
+function startApp(x, port, routes, cb){  
   debug('starting app', x, port, routes)
   common.apps[x] = {}
-  common.apps[x].sumReq = 0
   common.apps[x].server = http.createServer(function(req,res){
-    common.apps[x].sumReq++
     res.end('this is app '+x)
   }).listen(port,function(){
     common.apps[x].pylon = pylon()
@@ -199,7 +167,6 @@ function startApp(x, port, routes, weight, cb){
     , { routes : routes
       , port   : port
       , host   : '0.0.0.0'
-      , weight : weight
       } )
     common.apps[x].client = common.apps[x].pylon.connect(common.pPort)
     
