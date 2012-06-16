@@ -188,7 +188,7 @@ balancer.prototype.handleRequest = function() {
   var self = this
   var renderDefault = jade.compile(self.defaultTpl)
   return function(req,res) {
-    debug('handleRquest',req.headers.host)
+    debug('handleRquest', req.headers.host)
     // req.buf = httpProxy.buffer(req)
     // res.on('finish', function onFinish() {req.buf.destroy()})
     var host = req.headers.host
@@ -221,7 +221,8 @@ balancer.prototype.handleRequest = function() {
 
 balancer.prototype.handleUpgrade = function() {
   var self = this
-  return function(req,socket,head){
+  return function(req, socket, head){
+    debug('handleUpgrade', req.headers.host)
     req.head = head
     // req.buf = httpProxy.buffer(req)
     // socket.on('close', function onClose() {req.buf.destroy()})
@@ -239,7 +240,7 @@ balancer.prototype.handleUpgrade = function() {
                       , host : routes.byId[id].host 
                       // , buffer : req.buf
                       }
-      proxy.proxyWebSocketRequest(req, res, req.head, currProxy)
+      proxy.proxyWebSocketRequest(req, socket, req.head, currProxy)
     }
   }
 }
