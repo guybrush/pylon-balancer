@@ -1,6 +1,6 @@
 {
   "name": "pylon-balancer",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "balancer for pylon",
   "bin": {
     "pylon-balancer": "./bin/cli.js"
