@@ -20,35 +20,41 @@ help.usage =
 , '|  _||_  ||_||___||_|_|     |___||__,||_||__,||_|_||___||___||_|'
 , '|_|  |___|v'+pkg.version
 , ''
-, 'pylon-balancer -p <balancer-port>        -P <pylon-port>      \\'
+, 'pylon-balancer -p <balancer-port>       [-P <pylon-port>]     \\'
 , '              [-h <balancer-host>]      [-H <pylon-host>]     \\'
 , '              [-k <balancer-https-key>] [-K <pylon-tls-key>]  \\'
-, '              [-c <balancer-https-cert>][-C <pylon-tls-cert>]'
+, '              [-c <balancer-https-cert>][-C <pylon-tls-cert>] \\'
+, '                                        [-r <pylon-remote>]'
+, ''
+, 'note: at least -p AND -P or -r must be set'
 ].join('\n')
 
-if (!argv.p || !argv.P) return exit(null,help.usage)
+if (!argv.p || (!argv.P && !argv.r)) return exit(null,help.usage)
 
 parseArgs()
 
 function parseArgs(){
   optsB.port = argv.p
-  optsP.port = argv.P
   optsB.host = argv.h || '0.0.0.0'
-  optsP.host = argv.H || '0.0.0.0'
-  optsP.reconnect = 1000
   if (argv.k && argv.c) {
     optsB.key = fs.readFileSync(argv.k)
     optsB.cert = fs.readFileSync(argv.c)
   }
-  if (argv.K && argv.C) {
-    optsP.key = fs.readFileSync(argv.K)
-    optsP.cert = fs.readFileSync(argv.C)
+  
+  if (!argv.r) {
+    optsP.port = argv.P
+    optsP.host = argv.H || '0.0.0.0'
+    if (argv.K && argv.C) {
+      optsP.key = fs.readFileSync(argv.K)
+      optsP.cert = fs.readFileSync(argv.C)
+    }
   }
-  debug('parsed args',{balancer:optsB,pylon:optsP})
+  else
+    optsP = argv.r
   
   var pb = PB()
   var server = pb.listen(optsB)
-  var client = pb.connect('local',{reconnect:500})
+  var client = pb.connect(optsP,{reconnect:1000})
   
   // startApp('a',rndPort(),'foo.eyzn.doesntexist.org',10,function(){
   //   debug('started app a -> http://foo.eyzn.doesntexist.org:'+argv.p)

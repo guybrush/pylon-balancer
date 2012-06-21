@@ -31,7 +31,6 @@ balancer.prototype.connect = function() {
   args.push(onConnectPb)
   var client = pylon.prototype.connect.apply(this.pylon,args)
   function onConnectPb(r,s){
-    console.log('PYLON BALANCER CONNECTED')
     debug('connected to pylon')
     Object.keys(self.routes.byId).forEach(function(y){self.del(y)})
     r.on('* * * balancer',function(){
