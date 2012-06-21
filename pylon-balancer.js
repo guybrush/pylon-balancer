@@ -57,18 +57,25 @@ balancer.prototype.connect = function() {
     })
     r.once('keys',function(regexp,keys){
       debug('pre-set remote keys',keys)
-      keys.forEach(function(x,i){
-        r.once('get', function onGet(k,v) {
-          var split = k.split(' ')
+      r.once('mget',onMget)
+      r.mget(keys)
+      function onMget() {
+        var args = [].slice.call(arguments)
+        var vals = args.pop()
+        var keys = args.pop()
+        keys.forEach(function(x,i){
+          var split = x.split(' ')
           var ip = split.shift()
           var id = split.shift()
+          var v = vals[i]
           if (v.host == '127.0.0.1') x.host = ip
           if (v.host == 'localhost') x.host = ip
           if (!v.host) v.host = ip
+          //console.log('ADD',v,id)
           self.add(v,id)
         })
-        r.get(x)
-      })
+      }
+      /* */
     })
     r.keys('^.+ .+ balancer$')
     //s.on('error',function(err){debug('socket error',err)})

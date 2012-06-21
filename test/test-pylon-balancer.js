@@ -39,15 +39,17 @@ module.exports =
     var port = ~~(Math.random()*50000)+10000
     var route = port+'.com'
     startApp(port, port, [route], function(){
-      sendRequest(route, function(res){
-        assert.equal(res.statusCode,200)
-        var data = ''
-        res.on('data',function(d){data+=d})
-        res.on('end',function(){
-          assert.equal(data,'this is app '+port)
-          stopApp(port,done)
+      setTimeout(function(){
+        sendRequest(route, function(res){
+          assert.equal(res.statusCode,200)
+          var data = ''
+          res.on('data',function(d){data+=d})
+          res.on('end',function(){
+            assert.equal(data,'this is app '+port)
+            stopApp(port,done)
+          })
         })
-      })
+      },200)
     })
   }
 , 'after stopping the app it should display the default-msg': function(done) {
