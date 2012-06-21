@@ -59,10 +59,9 @@ balancer.prototype.connect = function() {
       debug('pre-set remote keys',keys)
       r.once('mget',onMget)
       r.mget(keys)
-      function onMget() {
-        var args = [].slice.call(arguments)
-        var vals = args.pop()
-        var keys = args.pop()
+      function onMget(keys,vals) {
+        if (keys.length != vals.length) 
+          return debug('keys.length != vals.length')
         keys.forEach(function(x,i){
           var split = x.split(' ')
           var ip = split.shift()
@@ -71,7 +70,6 @@ balancer.prototype.connect = function() {
           if (v.host == '127.0.0.1') x.host = ip
           if (v.host == 'localhost') x.host = ip
           if (!v.host) v.host = ip
-          //console.log('ADD',v,id)
           self.add(v,id)
         })
       }
@@ -136,7 +134,6 @@ balancer.prototype.listen = function() {
 }
 
 balancer.prototype.add = function(routesToAdd,id) {
-  debug('adding routes')
   var self = this
   if ( routesToAdd.routes
        && Array.isArray(routesToAdd.routes)
@@ -156,11 +153,11 @@ balancer.prototype.add = function(routesToAdd,id) {
     })
   }
   self.pylon.set('balancer-server',self.routes)
-  debug('added routes',{id:id,routes:routesToAdd})
+  debug('added routes',{id:id,routes:routesToAdd.routes})
 }
 
 balancer.prototype.del = function(id) {
-  debug('deleting',id)
+  debug('deleting routes',id)
   var self = this
   var curr = self.routes.byId[id]
   if (!curr) return
