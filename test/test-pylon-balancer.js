@@ -120,7 +120,6 @@ module.exports =
                   , { routes : [route]
                     , port   : port
                     , host   : '0.0.0.0'
-                    , weight : weight
                     } )
       appPylon.connect(pPort,{reconnect:10},function(){
         debug('app connected to pylon')

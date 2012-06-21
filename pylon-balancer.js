@@ -31,8 +31,9 @@ balancer.prototype.connect = function() {
   args.push(onConnectPb)
   var client = pylon.prototype.connect.apply(this.pylon,args)
   function onConnectPb(r,s){
+    console.log('PYLON BALANCER CONNECTED')
     debug('connected to pylon')
-    var toDel = Object.keys(self.routes.byId)
+    Object.keys(self.routes.byId).forEach(function(y){self.del(y)})
     r.on('* * * balancer',function(){
       var args = [].slice.call(arguments)
       var split = this.event.split(' ')
@@ -57,7 +58,6 @@ balancer.prototype.connect = function() {
     })
     r.once('keys',function(regexp,keys){
       debug('pre-set remote keys',keys)
-      var todo = keys.length
       keys.forEach(function(x,i){
         r.once('get', function onGet(k,v) {
           var split = k.split(' ')
@@ -67,9 +67,6 @@ balancer.prototype.connect = function() {
           if (v.host == 'localhost') x.host = ip
           if (!v.host) v.host = ip
           self.add(v,id)
-          var delIndex = toDel.indexOf(id)
-          if (!!~delIndex) toDel.splice(delIndex,1)
-          if (!(--todo)) toDel.forEach(function(y){self.del(y)})
         })
         r.get(x)
       })

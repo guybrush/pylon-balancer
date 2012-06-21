@@ -48,7 +48,7 @@ function parseArgs(){
   
   var pb = PB()
   var server = pb.listen(optsB)
-  var client = pb.connect(optsP)
+  var client = pb.connect('local',{reconnect:500})
   
   // startApp('a',rndPort(),'foo.eyzn.doesntexist.org',10,function(){
   //   debug('started app a -> http://foo.eyzn.doesntexist.org:'+argv.p)
