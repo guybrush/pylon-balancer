@@ -47,17 +47,19 @@ html
                    , ['#fff'   ,'#000'   ,'#b43']
                    , ['#000'   ,'#fff'   ,'#b43']
                    ]
-                   
+                                                    
       var rnd = Math.floor(Math.random()*10)%6
-      
+                    
       var bg = document.getElementById('bg')
       bg.innerHTML = Array(100).join(pattern)
       bg.style.color = colors[rnd][0]
       bg.style.background = colors[rnd][1] 
       
       var boxes = document.getElementsByClassName('box')
-      boxes[0].style.color = colors[rnd][1]
-      boxes[0].style.background = colors[rnd][0]
+      for (var i=0, len=boxes.length; i<len; i++) {
+        boxes[i].style.color = colors[rnd][1]              
+        boxes[i].style.background = colors[rnd][0]
+      }
       
       var links = document.getElementsByTagName('a')
       for (var i=0, len=links.length; i<len; i++)
