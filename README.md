@@ -1,5 +1,7 @@
 # pylon-balancer
 
+[![build status](https://secure.travis-ci.org/guybrush/pylon-balancer.png)](http://travis-ci.org/guybrush/pylon-balancer)
+
 this is a [pylon]-client which queries/subscribes the pylon-server for keys
 holding arrays containing proxy-informations. these proxy-informations will
 be used to create a proxy-table for [http-proxy].
