@@ -37,12 +37,11 @@ var p = require('pylon')()
 p.connect(3000) // a pylon-server
 p.set
 ( 'balancer'
-, [ { routes : ['foo.bar.com']  // routes which should be proxied to the app
-    , port   : 3434             // the port on which the app is listening
-    , host   : ''               // optional, per default it will use the
-                                // ip-prefix of the pylon-key
-    }
-  ] )
+, { routes : ['foo.bar.com']  // routes which should be proxied to the app
+  , port   : 3434             // the port on which the app is listening
+  , host   : ''               // optional, per default it will use the
+                              // ip-prefix of the pylon-key
+  } )
 ```
 
 [pylon]: https://github.com/guybrush/pylon
