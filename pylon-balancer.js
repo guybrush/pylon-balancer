@@ -179,8 +179,11 @@ balancer.prototype.handleRequest = function() {
       res.end(renderDefault({req:req}))
       return
     }
+    
     if (~~host.indexOf(':'))
       host = host.split(':')[0]
+    if (host.substring(0,4) == 'www.') 
+      host.slice(4)
     if (self.routes.byRoute[host]) {
       self.sumRequests[host] = self.sumRequests[host] || 0
       self.sumRequests[host]++
