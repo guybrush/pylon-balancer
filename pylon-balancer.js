@@ -9,7 +9,6 @@ var pylon = require('pylon')
   , jade = require('jade')
   , debug = require('debug')('pylon-balancer')
   , _ = require('underscore')
-  , seed = ~~(Math.random() * 1e9)
 
 function balancer(opts) {
   if (!(this instanceof balancer)) return new balancer(opts)
@@ -188,7 +187,7 @@ balancer.prototype.handleRequest = function() {
       self.sumRequests[host] = self.sumRequests[host] || 0
       self.sumRequests[host]++
       var len = self.routes.byRoute[host].length
-      var ipHash = hash((req.remoteAddress || '').split(/\./g), seed)
+      var ipHash = hash((req.connection.remoteAddress || '').split(/\./g))
       var id = self.routes.byRoute[host][ipHash%len]
       var currProxy = { port : self.routes.byId[id].port
                       , host : self.routes.byId[id].host
@@ -232,6 +231,7 @@ balancer.prototype.handleUpgrade = function() {
 
 // https://github.com/indutny/sticky-session/blob/f834a141/lib/sticky-session.js
 function hash(ip, seed) {
+  var seed = seed || 352125497
   var hash = ip.reduce(function(r, num) {
     r += parseInt(num, 10);
     r %= 2147483648;
