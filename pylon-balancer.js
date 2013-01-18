@@ -17,6 +17,7 @@ function balancer(opts) {
   this.defaultTpl = opts && opts.defaultTpl
                     ? opts.defaultTpl
                     : fs.readFileSync(__dirname+'/views/default.jade')
+  this.renderDefault = jade.compile(this.defaultTpl)
   this.pylon = pylon()
   return this
 }
@@ -166,8 +167,7 @@ balancer.prototype.del = function(id) {
 
 balancer.prototype.handleRequest = function() {
   var self = this
-  var renderDefault = jade.compile(self.defaultTpl)
-  return function(req,res) {
+  return function(req, res) {
     debug('handleRquest', req.headers.host)
     // req.buf = httpProxy.buffer(req)
     // res.on('finish', function onFinish() {req.buf.destroy()})
@@ -178,10 +178,10 @@ balancer.prototype.handleRequest = function() {
       res.end(renderDefault({req:req}))
       return
     }
-    
+
     if (~~host.indexOf(':'))
       host = host.split(':')[0]
-    if (host.substring(0,4) == 'www.') 
+    if (host.substring(0,4) == 'www.')
       host = host.slice(4)
     if (self.routes.byRoute[host]) {
       self.sumRequests[host] = self.sumRequests[host] || 0
@@ -198,7 +198,7 @@ balancer.prototype.handleRequest = function() {
     } else {
       debug('render default')
       res.writeHead(502)
-      res.end(renderDefault({req:req}))
+      res.end(self.renderDefault({req:req}))
     }
   }
 }

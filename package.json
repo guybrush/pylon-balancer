@@ -9,7 +9,6 @@
     "test": "node_modules/.bin/mocha"
   },
   "dependencies": {
-    "async-array": "0.1.7",
     "debug": "0.5.0",
     "http-proxy": "0.8.0",
     "jade": "0.20.x",

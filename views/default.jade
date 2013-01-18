@@ -1,11 +1,20 @@
+- var colors = [['#22252A','#689','#fff'],['#689','#22252A','#fff'],['#b43','#22252A','#fff'],['#22252A','#b43','#fff'],['#fff','#000','#b43'],['#000','#fff','#b43']]
+- var rnd = Math.floor(Math.random()*10)%6
+- var c1 = colors[rnd][0]
+- var c2 = colors[rnd][1]
+- var c3 = colors[rnd][2]
+!!! 5
 html
   head
     title #{req.headers.host}
     style
-      #wrapper {position:fixed;top:0;bottom:0;left:0;right:0;overflow:auto;}
-      #bg {top:0;left:0;position:fixed ;width:200%; height:200%; cursor:default;}
-      #bg, #bg pre, #bg .bg {margin:0;padding:0;}
-      #bg .bg {float:left;}
+      #wrapper {
+        position:fixed; top:0; bottom:0; left:0; right:0; overflow:auto; }
+      #bg {
+        top:0; left:0; position:fixed; width:200%; height:200%;
+        color:#{c1}; background:#{c2}; cursor:default; }
+      #bg, #bg pre, #bg .bg { margin:0; padding:0; }
+      #bg .bg { float:left; }
   body
     #bg
     #wrapper
@@ -39,28 +48,20 @@ html
           + '</pre></div>'
         ].join('</pre><pre>')
       
-      
-      var colors = [ ['#22252A','#689'   ,'#fff']
-                   , ['#689'   ,'#22252A','#fff']
-                   , ['#b43'   ,'#22252A','#fff']
-                   , ['#22252A','#b43'   ,'#fff']
-                   , ['#fff'   ,'#000'   ,'#b43']
-                   , ['#000'   ,'#fff'   ,'#b43']
-                   ]
-                                                    
-      var rnd = Math.floor(Math.random()*10)%6
-                    
       var bg = document.getElementById('bg')
       bg.innerHTML = Array(100).join(pattern)
-      bg.style.color = colors[rnd][0]
-      bg.style.background = colors[rnd][1] 
-      
-      var boxes = document.getElementsByClassName('box')
-      for (var i=0, len=boxes.length; i<len; i++) {
-        boxes[i].style.color = colors[rnd][1]              
-        boxes[i].style.background = colors[rnd][0]
-      }
-      
-      var links = document.getElementsByTagName('a')
-      for (var i=0, len=links.length; i<len; i++)
-        links[i].style.color = colors[rnd][2]
+        
+      //- var colors = !{JSON.stringify(colors)}                                              
+      //- var rnd = Math.floor(Math.random()*10)%6
+      //- bg.style.color = colors[rnd][0]
+      //- bg.style.background = colors[rnd][1] 
+      //- 
+      //- var boxes = document.getElementsByClassName('box')
+      //- for (var i=0, len=boxes.length; i<len; i++) {
+      //-   boxes[i].style.color = colors[rnd][1]              
+      //-   boxes[i].style.background = colors[rnd][0]
+      //- }
+      //- 
+      //- var links = document.getElementsByTagName('a')
+      //- for (var i=0, len=links.length; i<len; i++)
+      //-   links[i].style.color = colors[rnd][2]
