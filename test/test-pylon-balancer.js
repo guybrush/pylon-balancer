@@ -4,7 +4,6 @@ var pylon = require('pylon')
 var assert = require('assert')
 var http = require('http')
 var common = {}
-var AA = require('async-array')
 var debug = require('debug')('test')
 
 ME['requesting a route which is not set yet'] = function(done) {
@@ -263,12 +262,12 @@ function setup() {
   common.p.onAny(ee2log('P-any'))
   common.pPort = ~~(Math.random()*50000)+10000
   common.pServer = common.p.listen(common.pPort)
-  
+
   common.pb = pb({defaultTpl:'div default-msg'})
   common.pbPort = ~~(Math.random()*50000)+10000
   common.pbClient = common.pb.connect(common.pPort)
   common.pbServer = common.pb.listen(common.pbPort)
-  
+
   common.apps = {}
 }
 
