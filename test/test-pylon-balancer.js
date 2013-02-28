@@ -5,6 +5,7 @@ var assert = require('assert')
 var http = require('http')
 var common = {}
 var debug = require('debug')('test')
+var ws = require('websocket')
 
 ME['requesting a route which is not set yet'] = function(done) {
   setup()
@@ -254,6 +255,45 @@ ME['start pylon, start app, start balancer, stop pylon'
         })
       })
     },200)
+  })
+}
+
+ME['websockets'] = function(done){
+  this.timeout(10000)
+  
+  var pPort = ~~(Math.random()*50000)+10000
+  var bPort = ~~(Math.random()*50000)+10000
+  var httpPort = ~~(Math.random()*50000)+10000
+  
+  var route = httpPort+'.com'
+  
+  var p = pylon()
+  var b = pb()
+  var appP = pylon()
+  
+  p.listen(pPort)
+  b.listen(bPort)
+  b.connect(pPort)
+  appP.connect(pPort,function(){debug('connected to p')})
+  
+  var httpServer = http.createServer(function(req,res){
+    debug('httpServer req')
+    res.end('hello')
+  }).listen(httpPort,function(){
+    b.pylon.once('set balancer-server',function(){
+      debug('trying to connect to ws..')
+      var wsClient = new ws.client()
+      wsClient.on('connect',function(conn){
+        debug('wsClient connect')
+      })
+      wsClient.connect('ws://0.0.0.0:'+bPort,null,null,{Host:route})
+    })
+    appP.set('balancer', {routes : [route], port : httpPort})
+  })
+  var wsServer = new ws.server({httpServer:httpServer})
+  wsServer.on('request',function(req){
+    debug('wsServer req')
+    done()
   })
 }
 

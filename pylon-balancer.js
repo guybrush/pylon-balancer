@@ -169,8 +169,6 @@ balancer.prototype.handleRequest = function() {
   var self = this
   return function(req, res) {
     debug('handleRquest', req.headers.host)
-    // req.buf = httpProxy.buffer(req)
-    // res.on('finish', function onFinish() {req.buf.destroy()})
     var host = req.headers.host
     if (!host) {
       debug('render default')
@@ -178,7 +176,6 @@ balancer.prototype.handleRequest = function() {
       res.end(renderDefault({req:req}))
       return
     }
-
     if (~~host.indexOf(':'))
       host = host.split(':')[0]
     if (host.substring(0,4) == 'www.')
@@ -186,6 +183,8 @@ balancer.prototype.handleRequest = function() {
     if (self.routes.byRoute[host]) {
       self.sumRequests[host] = self.sumRequests[host] || 0
       self.sumRequests[host]++
+      // req.buf = httpProxy.buffer(req)
+      // res.on('finish', function onFinish() {req.buf.destroy()})
       var len = self.routes.byRoute[host].length
       var ipHash = hash((req.connection.remoteAddress || '').split(/\./g))
       var id = self.routes.byRoute[host][ipHash%len]
@@ -195,7 +194,8 @@ balancer.prototype.handleRequest = function() {
                       }
       debug('proxyRequest',{host:host,proxy:currProxy})
       proxy.proxyRequest(req, res, currProxy)
-    } else {
+    } 
+    else {
       debug('render default')
       res.writeHead(502)
       res.end(self.renderDefault({req:req}))
@@ -206,25 +206,28 @@ balancer.prototype.handleRequest = function() {
 balancer.prototype.handleUpgrade = function() {
   var self = this
   return function(req, socket, head){
-    debug('handleUpgrade', req.headers.host)
+    debug('handleUpgrade', req.headers)
     req.head = head
-    // req.buf = httpProxy.buffer(req)
-    // socket.on('close', function onClose() {req.buf.destroy()})
     var host = req.headers.host
     if (!host) return
     if (~~host.indexOf(':'))
       host = host.split(':')[0]
-    if (routes.byRoute[host]) {
-      sumRequests[host] = sumRequests[host] || 0
-      sumRequests[host]++
+    if (self.routes.byRoute[host]) {
+      self.sumRequests[host] = self.sumRequests[host] || 0
+      self.sumRequests[host]++
+      // req.buf = httpProxy.buffer(req)
+      // socket.on('close', function onClose() {req.buf.destroy()})
       var len = self.routes.byRoute[host].length
-      var ipHash = hash((req.remoteAddress || '').split(/\./g), seed)
+      var ipHash = hash((req.connection.remoteAddress || '').split(/\./g))
       var id = self.routes.byRoute[host][ipHash%len]
-      var currProxy = { port : routes.byId[id].port
-                      , host : routes.byId[id].host
+      var currProxy = { port : self.routes.byId[id].port
+                      , host : self.routes.byId[id].host
                       // , buffer : req.buf
                       }
       proxy.proxyWebSocketRequest(req, socket, req.head, currProxy)
+    }
+    else {
+      socket.end()
     }
   }
 }

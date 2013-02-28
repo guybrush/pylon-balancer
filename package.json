@@ -20,7 +20,8 @@
     "node": "0.6.x"
   },
   "devDependencies": {
-    "mocha": "0.13.x"
+    "mocha": "0.13.x",
+    "websocket": "git://github.com/guybrush/WebSocket-Node.git#customHeaders"
   },
   "optionalDependencies": {}
 }
