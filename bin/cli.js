@@ -6,6 +6,7 @@ var pkg = require('../package.json')
 var opti = require('optimist')
 var fs = require('fs')
 var debug = require('debug')('pylon-balancer-cli')
+var crypto = require('crypto')
 var argv = opti.argv
 var common = {apps:{}}
 var optsB = {}
@@ -23,9 +24,13 @@ help.usage =
 , '              [-h <balancer-host>]       [-H <pylon-host>]     \\'
 , '              [-k <balancer-https-key>]  [-K <pylon-tls-key>]  \\'
 , '              [-c <balancer-https-cert>] [-C <pylon-tls-cert>] \\'
-, '                                         [-r <pylon-remote>]'
+, '              [-s <sni-directory>]       [-r <pylon-remote>]'
 , ''
 , 'note: at least -p AND -P or -r must be set'
+, 'note: if -s is set, SNICallback will look into that directory'
+, '      for <hostname>.{key,cert}.'
+, '      e.g: `pylon-balancer -p 8080 -s /sniDir` will look for'
+, '      "/sniDir/foo.com.cert" and "/sniDir/foo.com.key".'
 ].join('\n')
 
 if (!argv.p || (!argv.P && !argv.r)) return exit(null,help.usage)
@@ -38,6 +43,12 @@ function parseArgs(){
   if (argv.k && argv.c) {
     optsB.key = fs.readFileSync(argv.k)
     optsB.cert = fs.readFileSync(argv.c)
+  }
+  if (argv.s) {
+    var contexts = getCredentialsContexts(argv.s)
+    optsB.SNICallback = function(hostname){
+      return contexts[hostname]
+    }
   }
 
   if (!argv.r) {
@@ -54,6 +65,25 @@ function parseArgs(){
   var pb = PB()
   var server = pb.listen(optsB)
   var client = pb.connect(optsP,{reconnect:1000})
+}
+
+function getCredentialsContexts(dir) {
+  var keys = {}, certs = {}, contexts = {}
+  fs.readdirSync(dir).forEach(function(x){
+    var ext = path.extname(x)
+    var name = x.split('.')
+    name.pop()
+    name = name.join('.')
+    if (ext == '.key')
+      keys[name] = fs.readFileSync(path.join(dir,x))
+    else if (ext == '.cert')
+      certs[name] = fs.readFileSync(path.join(dir,x))
+  })
+  Object.keys(keys).forEach(function(x){
+    if (!certs[x]) return
+    contexts[x] = crypto.createCredentials({key:keys[x],cert:certs[x]}).context
+  })
+  return contexts
 }
 
 function exit(err, msg) {

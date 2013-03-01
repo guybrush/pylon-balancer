@@ -114,17 +114,21 @@ balancer.prototype.listen = function() {
 
   var self = this
   var server
-  if (opts.tls.key && opts.tls.cert){
+  if (opts.tls.SNICallback || (opts.tls.key && opts.tls.cert)){
+    debug('starting https-server')
     opts.tls.type = 'tls'
     server = https.createServer(opts.tls)
   }
-  else
+  else {
+    debug('starting http-server')
     server = http.createServer()
+  }
 
   server.on('request', this.handleRequest())
   server.on('upgrade', this.handleUpgrade())
   server.on('error', function(err){debug('server error',err)})
   server.listen(opts.port,opts.host,cb)
+  debug('balancer-server listening on',opts.port,opts.host)
   return server
 }
 
@@ -194,7 +198,7 @@ balancer.prototype.handleRequest = function() {
                       }
       debug('proxyRequest',{host:host,proxy:currProxy})
       proxy.proxyRequest(req, res, currProxy)
-    } 
+    }
     else {
       debug('render default')
       res.writeHead(502)
