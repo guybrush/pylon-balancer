@@ -177,7 +177,7 @@ balancer.prototype.handleRequest = function() {
     if (!host) {
       debug('render default')
       res.writeHead(502)
-      res.end(renderDefault({req:req}))
+      res.end(self.renderDefault({req:req}))
       return
     }
     if (~~host.indexOf(':'))
