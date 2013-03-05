@@ -52,16 +52,22 @@ balancer.prototype.connect = function() {
         case 'del':
           self.del(id)
           break
-        default: ;
+        default: 
+          debug('unknown method',method)
       }
     })
     r.once('keys',function(regexp,keys){
       debug('pre-set remote keys',regexp,keys)
+      console.log()
       keys.forEach(function(x,i){
-        r.once('get', function onGet(k,v) {
-          var split = k.split(' ')
-          var ip = split.shift()
-          var id = split.shift()
+        var s = x.split(' ')
+        s.unshift('get')
+        debug('pre-set getting',x,s)
+        r.once(s.join('::'), function(v) {
+          var split = this.event.split(' ')
+          var ip = split[1]
+          var id = split[2]
+          debug('pre-set got',ip,id,v)
           if (v.host == '127.0.0.1') x.host = ip
           if (v.host == 'localhost') x.host = ip
           if (!v.host) v.host = ip
@@ -175,7 +181,7 @@ balancer.prototype.handleRequest = function() {
     debug('handleRquest', req.headers.host)
     var host = req.headers.host
     if (!host) {
-      debug('render default')
+      debug('render default - no host')
       res.writeHead(502)
       res.end(self.renderDefault({req:req}))
       return
