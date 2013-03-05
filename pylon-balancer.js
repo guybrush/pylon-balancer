@@ -56,7 +56,7 @@ balancer.prototype.connect = function() {
       }
     })
     r.once('keys',function(regexp,keys){
-      debug('pre-set remote keys',keys)
+      debug('pre-set remote keys',regexp,keys)
       keys.forEach(function(x,i){
         r.once('get', function onGet(k,v) {
           var split = k.split(' ')
